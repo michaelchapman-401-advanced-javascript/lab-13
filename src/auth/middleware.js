@@ -33,7 +33,8 @@ module.exports = (req, res, next) => {
   }
 
   function _authBearer(str) {
-    return User.authticateBearer(str)
+    console.log('STRING: ', str);
+    return User.authenticateBearer(str)
       .then(user => _authenticate(user))
       .catch(next);
   }

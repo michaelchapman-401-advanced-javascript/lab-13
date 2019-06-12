@@ -45,6 +45,7 @@ users.statics.createFromOauth = function(email) {
 };
 
 users.statics.authenticateBasic = function(auth) {
+  console.log('BASIC');
   let query = {username:auth.username};
   return this.findOne(query)
     .then( user => user && user.comparePassword(auth.password) )
@@ -52,11 +53,6 @@ users.statics.authenticateBasic = function(auth) {
 };
 
 users.statics.authenticateBearer = function(token) {
-  if (usedTokens.has(token)) {
-    return Promise.reject('Invalid token');
-  }
-
-  console.log(process.env.SECRET);
   // Parse the token
   let parsedToken = jwt.verify(token, process.env.SECRET);
 
