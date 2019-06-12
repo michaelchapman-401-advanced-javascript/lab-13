@@ -4,6 +4,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+// datastructure built into javascript
+// The point is it ensures uniqueness
+// What you put in must be unique therefore no token will get added twice
+const usedTokens = new Set();
+
 const users = new mongoose.Schema({
   username: {type:String, required:true, unique:true},
   password: {type:String, required:true},
@@ -46,19 +51,44 @@ users.statics.authenticateBasic = function(auth) {
     .catch(error => {throw error;});
 };
 
+users.statics.authenticateBearer = function(token) {
+  if (usedTokens.has(token)) {
+    return Promise.reject('Invalid token');
+  }
+
+  console.log(process.env.SECRET);
+  // Parse the token
+  let parsedToken = jwt.verify(token, process.env.SECRET);
+
+  parsedToken.type !== 'key' && usedTokens.add(token);
+
+  // Get the id
+  let query = {_id: parsedToken.id};
+
+  // Find the user
+  return this.findOne(query);
+};
+
 users.methods.comparePassword = function(password) {
   return bcrypt.compare( password, this.password )
     .then( valid => valid ? this : null);
 };
 
-users.methods.generateToken = function() {
+users.methods.generateToken = function(type) {
   
   let token = {
     id: this._id,
     role: this.role,
+    type: type || 'user',
   };
+
+  let options = {};
+
+  if (token.type === 'user') {
+    options = {expiresIn: '15m'};
+  }
   
-  return jwt.sign(token, process.env.SECRET);
+  return jwt.sign(token, process.env.SECRET, options);
 };
 
 module.exports = mongoose.model('users', users);
